@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import IdeaCard from './IdeaCard'
 import styles from './Ideas_list.module.css'
-import { fetchIdeas, type Idea } from '../services/api'
+import { fetchIdeas, voteForIdea, type Idea } from '../services/api'
 
 function IdeasList() {
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [voteError, setVoteError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadIdeas = async () => {
@@ -28,6 +29,47 @@ function IdeasList() {
 
     loadIdeas()
   }, [])
+
+  // Handle voting with optimistic update
+  const handleVote = async (ideaId: number) => {
+    // Clear any previous vote errors
+    setVoteError(null)
+
+    // Save the current state for rollback
+    const previousIdeas = [...ideas]
+
+    // Optimistic update: immediately update the UI
+    setIdeas((currentIdeas) =>
+      currentIdeas.map((idea) =>
+        idea.id === ideaId
+          ? { 
+              ...idea, 
+              votes: (idea.votes || 0) + 1, 
+              votedByMe: true 
+            }
+          : idea
+      )
+    )
+
+    // Send request to server
+    try {
+      await voteForIdea(ideaId)
+      // Success! The optimistic update remains
+    } catch (err) {
+      // Rollback on error
+      setIdeas(previousIdeas)
+      
+      // Show error message
+      if (err instanceof Error) {
+        setVoteError(err.message)
+      } else {
+        setVoteError('Failed to vote. Please try again.')
+      }
+      
+      // Auto-hide error after 5 seconds
+      setTimeout(() => setVoteError(null), 5000)
+    }
+  }
 
   // Loading state
   if (isLoading) {
@@ -58,18 +100,26 @@ function IdeasList() {
 
   // Success state - render ideas
   return (
-    <div className={styles.ideasList}>
-      {ideas.map((idea) => (
-        <IdeaCard
-          key={idea.id}
-          id={idea.id}
-          title={idea.title}
-          description={idea.description}
-          votes={idea.votes}
-          votedByMe={idea.votedByMe}
-        />
-      ))}
-    </div>
+    <>
+      {voteError && (
+        <div className={styles.voteErrorNotification}>
+          <p>{voteError}</p>
+        </div>
+      )}
+      <div className={styles.ideasList}>
+        {ideas.map((idea) => (
+          <IdeaCard
+            key={idea.id}
+            id={idea.id}
+            title={idea.title}
+            description={idea.description}
+            votes={idea.votes}
+            votedByMe={idea.votedByMe}
+            onVote={handleVote}
+          />
+        ))}
+      </div>
+    </>
   )
 }
 

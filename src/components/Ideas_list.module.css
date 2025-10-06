@@ -23,6 +23,33 @@
   font-weight: 500;
 }
 
+.voteErrorNotification {
+  max-width: 800px;
+  margin: 0 auto 1rem;
+  padding: 1rem 1.5rem;
+  background-color: rgba(255, 107, 107, 0.15);
+  border: 1px solid rgba(255, 107, 107, 0.5);
+  border-radius: 8px;
+  animation: slideDown 0.3s ease-out;
+}
+
+.voteErrorNotification p {
+  color: #ff6b6b;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-color-scheme: light) {
   .statusMessage p {
     color: #213547;
@@ -30,6 +57,15 @@
   
   .errorMessage {
     color: #d32f2f !important;
+  }
+
+  .voteErrorNotification {
+    background-color: rgba(211, 47, 47, 0.1);
+    border-color: rgba(211, 47, 47, 0.3);
+  }
+
+  .voteErrorNotification p {
+    color: #d32f2f;
   }
 }
 
