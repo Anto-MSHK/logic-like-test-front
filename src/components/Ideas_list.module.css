@@ -6,3 +6,30 @@
   margin: 0 auto;
 }
 
+.statusMessage {
+  text-align: center;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.statusMessage p {
+  font-size: 1.2em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.errorMessage {
+  color: #ff6b6b !important;
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: light) {
+  .statusMessage p {
+    color: #213547;
+  }
+  
+  .errorMessage {
+    color: #d32f2f !important;
+  }
+}
+
