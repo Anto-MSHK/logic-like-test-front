@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import IdeaCard from './IdeaCard'
 import styles from './Ideas_list.module.css'
 import { fetchIdeas, voteForIdea, type Idea } from '../services/api'
+import { getSocket, connectSocket, disconnectSocket } from '../services/socket'
 
 function IdeasList() {
   const [ideas, setIdeas] = useState<Idea[]>([])
@@ -9,6 +10,7 @@ function IdeasList() {
   const [error, setError] = useState<string | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
 
+  // Load initial ideas data
   useEffect(() => {
     const loadIdeas = async () => {
       try {
@@ -28,6 +30,37 @@ function IdeasList() {
     }
 
     loadIdeas()
+  }, [])
+
+  // WebSocket connection and real-time updates
+  useEffect(() => {
+    // Get socket instance
+    const socket = getSocket()
+
+    // Handler for vote updates from other users
+    const handleVoteUpdate = (data: { ideaId: number; newVoteCount: number }) => {
+      console.log('Received vote update:', data)
+      
+      setIdeas((currentIdeas) =>
+        currentIdeas.map((idea) =>
+          idea.id === data.ideaId
+            ? { ...idea, votes: data.newVoteCount }
+            : idea
+        )
+      )
+    }
+
+    // Connect to socket
+    connectSocket()
+
+    // Subscribe to vote_update event
+    socket.on('vote_update', handleVoteUpdate)
+
+    // Cleanup function: unsubscribe and disconnect
+    return () => {
+      socket.off('vote_update', handleVoteUpdate)
+      disconnectSocket()
+    }
   }, [])
 
   // Handle voting with optimistic update
