@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styles from './IdeaCard.module.css'
 
 interface IdeaCardProps {
@@ -6,15 +7,22 @@ interface IdeaCardProps {
   description: string
   votes: number
   votedByMe: boolean
-  onVote: (ideaId: number) => void
+  onVote: (ideaId: number) => Promise<void>
 }
 
 function IdeaCard({ id, title, description, votes, votedByMe, onVote }: IdeaCardProps) {
-  const handleVoteClick = () => {
-    onVote(id)
+  const [isVoting, setIsVoting] = useState(false)
+
+  const handleVoteClick = async () => {
+    setIsVoting(true)
+    
+    // Wait minimum 1 second to prevent button twitching on fast responses
+    const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1000))
+    await Promise.all([onVote(id), minLoadingTime])
+    
+    setIsVoting(false)
   }
 
-  // Ensure votes is a valid number, default to 0 if not
   const voteCount = typeof votes === 'number' && !isNaN(votes) ? votes : 0
 
   return (
@@ -25,10 +33,18 @@ function IdeaCard({ id, title, description, votes, votedByMe, onVote }: IdeaCard
         <span className={styles.votes}>Votes: {voteCount}</span>
         {!votedByMe && (
           <button 
-            className={styles.voteButton}
+            className={`${styles.voteButton} ${isVoting ? styles.voting : ''}`}
             onClick={handleVoteClick}
+            disabled={isVoting}
           >
-            Vote
+            {isVoting ? (
+              <>
+                <span className={styles.spinner}></span>
+                Voting...
+              </>
+            ) : (
+              'Vote'
+            )}
           </button>
         )}
       </div>

@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import IdeaCard from './IdeaCard'
+import LoadingSpinner from './LoadingSpinner'
+import ErrorDisplay from './ErrorDisplay'
 import styles from './Ideas_list.module.css'
 import { fetchIdeas, voteForIdea, type Idea } from '../services/api'
 import { getSocket, connectSocket, disconnectSocket } from '../services/socket'
@@ -10,34 +12,30 @@ function IdeasList() {
   const [error, setError] = useState<string | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
 
-  // Load initial ideas data
-  useEffect(() => {
-    const loadIdeas = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const data = await fetchIdeas()
-        setIdeas(data)
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message)
-        } else {
-          setError('An unknown error occurred')
-        }
-      } finally {
-        setIsLoading(false)
+  const loadIdeas = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const data = await fetchIdeas()
+      setIdeas(data)
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('An unknown error occurred while loading ideas')
       }
+    } finally {
+      setIsLoading(false)
     }
-
-    loadIdeas()
   }, [])
 
-  // WebSocket connection and real-time updates
   useEffect(() => {
-    // Get socket instance
+    loadIdeas()
+  }, [loadIdeas])
+
+  useEffect(() => {
     const socket = getSocket()
 
-    // Handler for vote updates from other users
     const handleVoteUpdate = (data: { ideaId: number; newVoteCount: number }) => {
       console.log('Received vote update:', data)
       
@@ -50,79 +48,54 @@ function IdeasList() {
       )
     }
 
-    // Connect to socket
     connectSocket()
-
-    // Subscribe to vote_update event
     socket.on('vote_update', handleVoteUpdate)
 
-    // Cleanup function: unsubscribe and disconnect
     return () => {
       socket.off('vote_update', handleVoteUpdate)
       disconnectSocket()
     }
   }, [])
 
-  // Handle voting with optimistic update
   const handleVote = async (ideaId: number) => {
-    // Clear any previous vote errors
     setVoteError(null)
 
-    // Save the current state for rollback
-    const previousIdeas = [...ideas]
-
-    // Optimistic update: immediately update the UI
-    setIdeas((currentIdeas) =>
-      currentIdeas.map((idea) =>
-        idea.id === ideaId
-          ? { 
-              ...idea, 
-              votes: (idea.votes || 0) + 1, 
-              votedByMe: true 
-            }
-          : idea
-      )
-    )
-
-    // Send request to server
     try {
       await voteForIdea(ideaId)
-      // Success! The optimistic update remains
-    } catch (err) {
-      // Rollback on error
-      setIdeas(previousIdeas)
       
-      // Show error message
+      // Only update votedByMe - vote count comes from WebSocket to avoid double increment
+      setIdeas((currentIdeas) =>
+        currentIdeas.map((idea) =>
+          idea.id === ideaId
+            ? { ...idea, votedByMe: true }
+            : idea
+        )
+      )
+    } catch (err) {
       if (err instanceof Error) {
         setVoteError(err.message)
       } else {
         setVoteError('Failed to vote. Please try again.')
       }
       
-      // Auto-hide error after 5 seconds
       setTimeout(() => setVoteError(null), 5000)
     }
   }
 
-  // Loading state
   if (isLoading) {
-    return (
-      <div className={styles.statusMessage}>
-        <p>Loading...</p>
-      </div>
-    )
+    return <LoadingSpinner size="large" message="Loading ideas..." />
   }
 
-  // Error state
   if (error) {
     return (
-      <div className={styles.statusMessage}>
-        <p className={styles.errorMessage}>Error: {error}</p>
-      </div>
+      <ErrorDisplay 
+        message={error}
+        onRetry={loadIdeas}
+        title="Failed to Load Ideas"
+      />
     )
   }
 
-  // Empty state
   if (ideas.length === 0) {
     return (
       <div className={styles.statusMessage}>
@@ -130,13 +103,25 @@ function IdeasList() {
       </div>
     )
   }
-
-  // Success state - render ideas
   return (
     <>
       {voteError && (
         <div className={styles.voteErrorNotification}>
+          <div className={styles.errorIcon}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+              <line x1="12" y1="8" x2="12" y2="12" strokeWidth="2" strokeLinecap="round" />
+              <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
           <p>{voteError}</p>
+          <button 
+            className={styles.closeButton}
+            onClick={() => setVoteError(null)}
+            aria-label="Close error"
+          >
+            ×
+          </button>
         </div>
       )}
       <div className={styles.ideasList}>

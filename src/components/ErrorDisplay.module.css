@@ -1,0 +1,84 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.iconContainer {
+  margin-bottom: 1rem;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  color: #ff6b6b;
+  stroke-width: 1.5;
+}
+
+.title {
+  font-size: 1.5em;
+  color: #ff6b6b;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.message {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1em;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
+}
+
+.retryButton {
+  padding: 0.75rem 1.5rem;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #646cff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.25s, transform 0.1s;
+}
+
+.retryButton:hover {
+  background-color: #535bf2;
+  transform: translateY(-2px);
+}
+
+.retryButton:active {
+  transform: translateY(0);
+}
+
+.retryButton:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  .icon {
+    color: #d32f2f;
+  }
+  
+  .title {
+    color: #d32f2f;
+  }
+  
+  .message {
+    color: #213547;
+  }
+  
+  .retryButton {
+    background-color: #535bf2;
+  }
+  
+  .retryButton:hover {
+    background-color: #646cff;
+  }
+}
+
